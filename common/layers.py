@@ -231,13 +231,23 @@ class Convolution:
 
     def backward(self, dout):
         FN, C, FH, FW = self.W.shape
+        # np.shape(dout) = (N, FN, out_h, out_w)
+        # transpose(0,2,3,1) = (N, out_h, out_w, FN)
+        # reshape(-1, FN) = (N*out_h*out_w, FN)
         dout = dout.transpose(0,2,3,1).reshape(-1, FN)
 
         self.db = np.sum(dout, axis=0)
+        # np.shape(col.T) = (C*FH*FW,N*out_h*out_w)
+        # dW = (C*FH*FW,FN)
         self.dW = np.dot(self.col.T, dout)
+        # transpose(1, 0) = (FN, C*FH*FW)
+        # reshape(FN, C, FH, FW)
         self.dW = self.dW.transpose(1, 0).reshape(FN, C, FH, FW)
 
+        # np.shape(col_w.T) = (FN, C*FH*FW)
+        # dcol = (N*out_h*out_w, C*FH*FW)
         dcol = np.dot(dout, self.col_W.T)
+        # x.shape = N, C, H, W
         dx = col2im(dcol, self.x.shape, FH, FW, self.stride, self.pad)
 
         return dx
@@ -271,14 +281,35 @@ class Pooling:
         return out
 
     def backward(self, dout):
+        # (N C Hout Wout) into (N Hout Wout C)
         dout = dout.transpose(0, 2, 3, 1)
         
         pool_size = self.pool_h * self.pool_w
         dmax = np.zeros((dout.size, pool_size))
         dmax[np.arange(self.arg_max.size), self.arg_max.flatten()] = dout.flatten()
-        dmax = dmax.reshape(dout.shape + (pool_size,)) 
         
-        dcol = dmax.reshape(dmax.shape[0] * dmax.shape[1] * dmax.shape[2], -1)
+        dcol = dmax.reshape(dout.shape[0] * dout.shape[1] * dout.shape[2], -1)
+
+        ############
+        # test code#
+        ############
+        # dmaxbuf=dmax;
+        # original
+        # dmax = dmax.reshape(dout.shape + (pool_size,)) 
+        # dcol = dmax.reshape(dmax.shape[0] * dmax.shape[1] * dmax.shape[2], -1)
+        
+        # edited
+        #dcolbuf = dmaxbuf.reshape(dout.shape[0] * dout.shape[1] * dout.shape[2], -1) 
+
+        # z = (dcol==dcolbuf)
+        # if (np.sum(z)==dcol.size and np.sum(z)==dcolbuf.size):
+        #    print('it is exactly same')   
+        #    print('np sum(z): '+str(np.sum(z)))
+        #    print('dcol.size : '+str(dcol.size))
+        #    print('dcolbuf.size : '+str(dcolbuf.size))
+        # else : print(nocool)
+
+
         dx = col2im(dcol, self.x.shape, self.pool_h, self.pool_w, self.stride, self.pad)
         
         return dx
