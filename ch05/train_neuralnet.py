@@ -1,7 +1,7 @@
 # coding: utf-8
 import sys, os
 sys.path.append(os.pardir)
-
+import matplotlib.pyplot as plt
 import numpy as np
 from dataset.mnist import load_mnist
 from two_layer_net import TwoLayerNet
@@ -44,3 +44,18 @@ for i in range(iters_num):
         train_acc_list.append(train_acc)
         test_acc_list.append(test_acc)
         print(train_acc, test_acc)
+
+
+markers = {'error': 'o', 'train': 'o', 'test': 's'}
+
+#x = np.arange(len(train_loss_list_epoch))
+#plt.plot(x, train_loss_list_epoch, label='error', marker = markers['error'])
+
+x = np.arange(len(train_acc_list))
+plt.plot(x, train_acc_list, label='train acc', marker = markers['train'])
+plt.plot(x, test_acc_list, label='test acc', linestyle='--', marker = markers['test'])
+plt.xlabel("epochs")
+plt.ylabel("accuracy/error")
+plt.ylim(0, 2.0)
+plt.legend(loc='lower right')
+plt.show()

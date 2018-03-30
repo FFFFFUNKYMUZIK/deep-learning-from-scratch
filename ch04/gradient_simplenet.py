@@ -17,15 +17,27 @@ class simpleNet:
         z = self.predict(x)
         y = softmax(z)
         loss = cross_entropy_error(y, t)
-
+        print('in net class, self.W:\n'+str(self.W))
         return loss
 
 x = np.array([0.6, 0.9])
 t = np.array([0, 0, 1])
 
+
 net = simpleNet()
 
-f = lambda w: net.loss(x, t)
+print ('net.W : \n'+str(net.W))
+#
+#f = lambda w: net.loss(x, t)
+
+def f(W):
+	print('in f, W :\n'+str(W))
+	print('in f, x :\n'+str(x))
+	print('in f, t :\n'+str(t))
+	return net.loss(x,t)
+
 dW = numerical_gradient(f, net.W)
 
 print(dW)
+
+print ('net.W : \n'+str(net.W))

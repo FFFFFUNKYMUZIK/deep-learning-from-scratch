@@ -31,6 +31,7 @@ def relu_grad(x):
 def softmax(x):
     if x.ndim == 2:
         x = x.T
+        #overflow prevention(exponents forced to be negative)
         x = x - np.max(x, axis=0)
         y = np.exp(x) / np.sum(np.exp(x), axis=0)
         return y.T 
