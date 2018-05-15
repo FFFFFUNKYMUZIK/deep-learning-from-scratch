@@ -27,7 +27,7 @@ class MultiLayerNetExtend:
     """
     def __init__(self, input_size, hidden_size_list, output_size,
                  activation='relu', weight_init_std='relu', weight_decay_lambda=0, 
-                 use_dropout = False, dropout_ration = 0.5, use_batchnorm=False):
+                 use_dropout = False, dropout_ration = 0.5, use_batchnorm=False, use_batchnorm_linearized=False):
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_size_list = hidden_size_list
@@ -35,6 +35,7 @@ class MultiLayerNetExtend:
         self.use_dropout = use_dropout
         self.weight_decay_lambda = weight_decay_lambda
         self.use_batchnorm = use_batchnorm
+        self.use_batchnorm_linearized = use_batchnorm_linearized
         self.params = {}
 
         # 重みの初期化
@@ -50,6 +51,11 @@ class MultiLayerNetExtend:
                 self.params['gamma' + str(idx)] = np.ones(hidden_size_list[idx-1])
                 self.params['beta' + str(idx)] = np.zeros(hidden_size_list[idx-1])
                 self.layers['BatchNorm' + str(idx)] = BatchNormalization(self.params['gamma' + str(idx)], self.params['beta' + str(idx)])
+
+            if self.use_batchnorm_linearized:
+                self.params['k' + str(idx)] = np.ones(hidden_size_list[idx-1])
+                self.params['l' + str(idx)] = np.zeros(hidden_size_list[idx-1])
+                self.layers['BatchNorm' + str(idx)] = BatchNormalization_linearized(self.params['k' + str(idx)], self.params['l' + str(idx)])
                 
             self.layers['Activation_function' + str(idx)] = activation_layer[activation]()
             
@@ -134,7 +140,9 @@ class MultiLayerNetExtend:
             if self.use_batchnorm and idx != self.hidden_layer_num+1:
                 grads['gamma' + str(idx)] = numerical_gradient(loss_W, self.params['gamma' + str(idx)])
                 grads['beta' + str(idx)] = numerical_gradient(loss_W, self.params['beta' + str(idx)])
-
+            if self.use_batchnorm_linearized and idx != self.hidden_layer_num+1:
+                grads['k' + str(idx)] = numerical_gradient(loss_W, self.params['k' + str(idx)])
+                grads['l' + str(idx)] = numerical_gradient(loss_W, self.params['l' + str(idx)])
         return grads
         
     def gradient(self, x, t):
@@ -159,5 +167,8 @@ class MultiLayerNetExtend:
             if self.use_batchnorm and idx != self.hidden_layer_num+1:
                 grads['gamma' + str(idx)] = self.layers['BatchNorm' + str(idx)].dgamma
                 grads['beta' + str(idx)] = self.layers['BatchNorm' + str(idx)].dbeta
+            if self.use_batchnorm_linearized and idx != self.hidden_layer_num+1:
+                grads['k' + str(idx)] = self.layers['BatchNorm' + str(idx)].dk
+                grads['l' + str(idx)] = self.layers['BatchNorm' + str(idx)].dl
 
         return grads
